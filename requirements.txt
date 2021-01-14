@@ -1,0 +1,7 @@
+opencv-python
+cvui
+numpy
+toml
+cerberus
+attrs
+pyudev
