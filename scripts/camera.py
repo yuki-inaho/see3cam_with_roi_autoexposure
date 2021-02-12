@@ -106,14 +106,15 @@ class Camera:
         self._set_auto_exposure_mode(camera_config, hid_handle)
 
     def _set_auto_exposure_mode(self, camera_config: CameraConfig, hid_handle: int):
-        if (camera_config.auto_exposure is None) or (camera_config.auto_exposure is "centered"):
+        if (camera_config.auto_exposure is None) or (camera_config.auto_exposure == "centered"):
             self._ae_status = enable_centered_auto_exposure(camera_config.width, camera_config.height, hid_handle)
-        elif camera_config.auto_exposure is "roi":
+        elif camera_config.auto_exposure == "roi":
             self._ae_status = enable_downward_center_roi_auto_exposure(camera_config.width, camera_config.height, hid_handle)
-        elif camera_config.auto_exposure is "disabled":
+        elif camera_config.auto_exposure == "disabled":
             self._ae_status = disable_auto_exposure(camera_config.width, camera_config.height, hid_handle)
         else:
-            print(f"No such auto-exposure mode {camera_config}. Choose [centered, roi, disabled]")
+            print(f"\nNo such auto-exposure mode {camera_config.auto_exposure}. Choose [centered, roi, disabled]")
+            self._ae_status = False
         assert self._ae_status
 
 
