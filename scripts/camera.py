@@ -90,7 +90,6 @@ class Camera:
         self._map1, self._map2 = fisheye_undistort_rectify_map(camera_config)
         self._frame = Frame()
         self._hid_handle = get_hid_handle_from_device_id(camera_config.device_id)
-        # self._hid_handle = get_see3cam_hid_handle()
         set_half_area_auto_exposure(camera_config.width, camera_config.height, self._hid_handle)
 
     def update(self) -> bool:

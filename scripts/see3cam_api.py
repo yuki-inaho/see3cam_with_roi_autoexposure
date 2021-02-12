@@ -6,6 +6,12 @@ import sys
 from select import select
 from time import sleep
 
+# If you would like to know the detail of See3CAM CU20's RoI based Autoexposure function, see below code lines
+# https://github.com/econsysqtcam/qtcam/blob/master/src/see3cam_cu20.cpp#L436-L489
+
+# If you would like to know the detail of See3CAM CU20's HID settings, see below scripts
+# https://github.com/econsystems/opencv/blob/master/Source/PythonScript/hid.py
+
 BUFFER_LENGTH = 65
 READ_FIRMWARE_VERSION = 0x40
 CAMERA_CONTROL_CU20 = 0x86
