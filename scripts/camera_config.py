@@ -17,6 +17,9 @@ _SCHEMA = {
     "k2": {"type": "float", "required": True},
     "k3": {"type": "float", "required": True},
     "k4": {"type": "float", "required": True},
+    "k5": {"type": "float", "required": False},
+    "k6": {"type": "float", "required": False},
+    "auto_exposure": {"type": "string", "required": False}
 }
 
 

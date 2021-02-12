@@ -1,11 +1,23 @@
 from datetime import datetime
 from threading import RLock
 from typing import Optional
+from enum import Enum
 
 import cv2
 import numpy as np
 from attr import dataclass, fields
-from scripts.see3cam_api import set_half_area_auto_exposure, get_hid_handle_from_device_id
+from scripts.see3cam_api import (
+    enable_centered_auto_exposure,
+    enable_downward_center_roi_auto_exposure,
+    disable_auto_exposure,
+    get_hid_handle_from_device_id
+)
+
+
+class AutoExposure(Enum):
+    Centered: 0
+    RoI: 1
+    Disable: 2
 
 
 class FromDict:
@@ -32,6 +44,7 @@ class CameraConfig(FromDict):
     k2: float
     k3: float
     k4: float
+    auto_exposure: Optional[str]
 
 
 def confirm_prop(cap, prop_id, value_arg):
@@ -89,8 +102,20 @@ class Camera:
         self._cap = get_cv2_video(camera_config)
         self._map1, self._map2 = fisheye_undistort_rectify_map(camera_config)
         self._frame = Frame()
-        self._hid_handle = get_hid_handle_from_device_id(camera_config.device_id)
-        set_half_area_auto_exposure(camera_config.width, camera_config.height, self._hid_handle)
+        hid_handle = get_hid_handle_from_device_id(camera_config.device_id)
+        self._set_auto_exposure_mode(camera_config, hid_handle)
+
+    def _set_auto_exposure_mode(self, camera_config: CameraConfig, hid_handle: int):
+        if (camera_config.auto_exposure is None) or (camera_config.auto_exposure is "centered"):
+            self._ae_status = enable_centered_auto_exposure(camera_config.width, camera_config.height, hid_handle)
+        elif camera_config.auto_exposure is "roi":
+            self._ae_status = enable_downward_center_roi_auto_exposure(camera_config.width, camera_config.height, hid_handle)
+        elif camera_config.auto_exposure is "disabled":
+            self._ae_status = disable_auto_exposure(camera_config.width, camera_config.height, hid_handle)
+        else:
+            print(f"No such auto-exposure mode {camera_config}. Choose [centered, roi, disabled]")
+        assert self._ae_status
+
 
     def update(self) -> bool:
         ret, frame = self._cap.read()
