@@ -1,7 +1,10 @@
-import pytest
 import sys
 import time
 from pathlib import Path
+from enum import IntEnum
+
+import cv2
+import pytest
 
 CURRENT_DIR = str(Path(".").resolve())
 SCRIPTS_DIR = str(Path(CURRENT_DIR).resolve())
@@ -10,6 +13,12 @@ CONFIG_FILE_PATH = str(Path(f"{CURRENT_DIR}/cfg/camera_parameter.toml").resolve(
 sys.path.append(SCRIPTS_DIR)
 from scripts.camera import Camera, AutoExposureMode
 from scripts.camera_config import get_config
+
+
+class CVAutoExposure(IntEnum):
+    AUTO = 0
+    MANUAL = 1
+
 
 
 @pytest.fixture
@@ -26,7 +35,14 @@ def test_camera_is_activated(fixture_camera):
 def test_auto_exposure_mode_setting(fixture_camera):
     camera = fixture_camera
     for ae_mode, inner_expected_mode in zip(["centered", "roi", "disabled"], ["Centered", "Manual", "Disable"]):
+        if ae_mode == "disabled":
+            # When if without below process (call only camera.set_auto_exposure_mode("disabled")),
+            # "aquired_auto_exposure_mode" will set "Manual"
+            camera._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, CVAutoExposure.MANUAL)
+        else:
+            camera._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, CVAutoExposure.AUTO)
+
         camera.set_auto_exposure_mode(ae_mode)
         aquired_auto_exposure_mode, _ = camera.auto_exposure_setting
-        time.sleep(1.0)
+        time.sleep(0.1)
         assert inner_expected_mode == [mode.name for mode in AutoExposureMode if aquired_auto_exposure_mode == mode.value][0]
