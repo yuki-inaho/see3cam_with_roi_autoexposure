@@ -39,10 +39,18 @@ def test_auto_exposure_mode_setting(fixture_camera):
             # When if without below process (call only camera.set_auto_exposure_mode("disabled")),
             # "aquired_auto_exposure_mode" will set "Manual"
             camera._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, CVAutoExposure.MANUAL)
+            for _mode in ["centered", "disabled"]:
+                camera.set_auto_exposure_mode(_mode)
+                aquired_auto_exposure_mode, _ = camera.auto_exposure_setting
+                assert inner_expected_mode == [mode.name for mode in AutoExposureMode if aquired_auto_exposure_mode == mode.value][0]
+            
+            camera._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, CVAutoExposure.AUTO)
+            camera.set_auto_exposure_mode("disabled")
+            aquired_auto_exposure_mode, _ = camera.auto_exposure_setting
+            assert inner_expected_mode == "Disable"
         else:
             camera._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, CVAutoExposure.AUTO)
-
-        camera.set_auto_exposure_mode(ae_mode)
-        aquired_auto_exposure_mode, _ = camera.auto_exposure_setting
-        time.sleep(0.1)
-        assert inner_expected_mode == [mode.name for mode in AutoExposureMode if aquired_auto_exposure_mode == mode.value][0]
+            camera.set_auto_exposure_mode(ae_mode)
+            aquired_auto_exposure_mode, _ = camera.auto_exposure_setting
+            time.sleep(0.1)
+            assert inner_expected_mode == [mode.name for mode in AutoExposureMode if aquired_auto_exposure_mode == mode.value][0]
