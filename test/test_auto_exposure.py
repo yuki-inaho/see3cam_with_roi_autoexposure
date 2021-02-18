@@ -33,7 +33,7 @@ def test_camera_is_activated(fixture_camera):
 
 def test_auto_exposure_mode_setting(fixture_camera):
     camera = fixture_camera
-    for ae_mode, inner_expected_mode, ae_window_size in zip(["centered", "roi", "disabled"], ["Centered", "Manual", "Disable"], [8, 4, 0]):
+    for ae_mode, inner_expected_mode, ae_window_size in zip(["centered", "roi", "disabled"], ["Centered", "Manual", "Disable"], [8, 4, None]):
         if ae_mode == "disabled":
             # When if without below process (call only camera.set_auto_exposure_mode("disabled")),
             # "aquired_auto_exposure_mode" will set "Manual"
