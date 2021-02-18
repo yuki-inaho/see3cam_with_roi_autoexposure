@@ -29,8 +29,7 @@ SUCCESS = 0x01
 
 
 def hid_write(hid_handle: int, input_buffer: bytearray):
-    ''' Writes the input buffer on to the hid handle
-    '''
+    """Writes the input buffer on to the hid handle"""
 
     if input_buffer is not None:
         retry_count = 0
@@ -49,8 +48,7 @@ def hid_write(hid_handle: int, input_buffer: bytearray):
 
 
 def hid_read(hid_handle):
-    ''' Reads data from the hid handle of the device
-    '''    
+    """Reads data from the hid handle of the device"""
     output_buffer = None
     timeout = 2000.0
     rlist, wlist, xlist = select([hid_handle], [], [hid_handle], timeout)
@@ -74,7 +72,7 @@ def get_hid_handle_from_device_id(device_id):
 
     serial_sequence = video_device.properties.get("ID_SERIAL")
     # serial_id is alphanumeric like "180B0204"
-    serial_id = re.search(r"e-con_Systems_See3CAM_CU20_([A-Z0-9]*)", serial_sequence).group(1)      
+    serial_id = re.search(r"e-con_Systems_See3CAM_CU20_([A-Z0-9]*)", serial_sequence).group(1)
 
     for device in pyudev.Context().list_devices(subsystem="hidraw"):
         usb_device = device.find_parent("usb", "usb_device")
@@ -92,6 +90,7 @@ def get_hid_handle_from_device_id(device_id):
 
 
 def enable_centered_auto_exposure(image_width, image_height, hid_handle, win_size=8):
+    """ Set Centered auto exposure to camera """
     input_buffer = bytearray([0] * BUFFER_LENGTH)
     input_buffer[1] = CAMERA_CONTROL_CU20
     input_buffer[2] = SET_AE_ROI_MODE_CU20
@@ -104,15 +103,21 @@ def enable_centered_auto_exposure(image_width, image_height, hid_handle, win_siz
     if output_buffer[6] == 0x00:
         print("\nEnabling AutoExposure(centered) is failed")
         return False
-    elif output_buffer[0] == CAMERA_CONTROL_CU20 and output_buffer[1] == SET_AE_ROI_MODE_CU20 and output_buffer[6] == SUCCESS:
+    elif (
+        output_buffer[0] == CAMERA_CONTROL_CU20
+        and output_buffer[1] == SET_AE_ROI_MODE_CU20
+        and output_buffer[6] == SUCCESS
+    ):
         print("\nAutoExposure(centered) is enabled")
         return True
 
 
 def enable_downward_center_roi_auto_exposure(image_width, image_height, hid_handle, win_size=4):
+    """ Set ROI auto exposure to camera """
     outputLow = 0
     outputHigh = 255
 
+    # Convert RoI center position to 0-255 value
     inputXLow = 0
     inputXHigh = image_width - 1
     inputXCord = int(image_width / 2)
@@ -137,9 +142,14 @@ def enable_downward_center_roi_auto_exposure(image_width, image_height, hid_hand
     if output_buffer[6] == 0x00:
         print("\nEnabling AutoExposure(RoI based) is failed")
         return False
-    elif output_buffer[0] == CAMERA_CONTROL_CU20 and output_buffer[1] == SET_AE_ROI_MODE_CU20 and output_buffer[6] == SUCCESS:
+    elif (
+        output_buffer[0] == CAMERA_CONTROL_CU20
+        and output_buffer[1] == SET_AE_ROI_MODE_CU20
+        and output_buffer[6] == SUCCESS
+    ):
         print("\nAutoExposure(RoI based) is enabled")
         return True
+
 
 def disable_auto_exposure(image_width, image_height, hid_handle, win_size=8):
     input_buffer = bytearray([0] * BUFFER_LENGTH)
@@ -153,6 +163,10 @@ def disable_auto_exposure(image_width, image_height, hid_handle, win_size=8):
     if output_buffer[6] == 0x00:
         print("\nDisabling AutoExposure(centered) failed")
         return False
-    elif output_buffer[0] == CAMERA_CONTROL_CU20 and output_buffer[1] == SET_AE_ROI_MODE_CU20 and output_buffer[6] == SUCCESS:
+    elif (
+        output_buffer[0] == CAMERA_CONTROL_CU20
+        and output_buffer[1] == SET_AE_ROI_MODE_CU20
+        and output_buffer[6] == SUCCESS
+    ):
         print("\nAutoExposure(centered) is disabled")
         return True
