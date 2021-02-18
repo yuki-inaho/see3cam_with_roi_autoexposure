@@ -70,18 +70,23 @@ def hid_read(hid_handle):
 def get_hid_handle_from_device_id(device_id):
     context = pyudev.Context()
     video_device = pyudev.Devices.from_device_file(context, device_id)
+    assert "ID_SERIAL" in video_device.properties
+
     serial_sequence = video_device.properties.get("ID_SERIAL")
-    serial_id = re.search(r"e-con_Systems_See3CAM_CU20_([A-Z0-9]*)", serial_sequence).group(1)  # serial_id is alphanumeric like "180B0204"
+    # serial_id is alphanumeric like "180B0204"
+    serial_id = re.search(r"e-con_Systems_See3CAM_CU20_([A-Z0-9]*)", serial_sequence).group(1)      
+
     for device in pyudev.Context().list_devices(subsystem="hidraw"):
         usb_device = device.find_parent("usb", "usb_device")
         if usb_device:
             vendor_id = usb_device.get("ID_VENDOR_ID")
             product_id = usb_device.get("ID_MODEL_ID")
-            if vendor_id == "2560" and product_id == "c120":  # See3CAM CU20
+            if vendor_id == "2560" and product_id == "c120":  # Detect See3CAM CU20 device
                 hid_device = device.parent
                 if serial_id == hid_device.get("HID_UNIQ"):
                     hid_device_path = hid_device.children.__next__().device_node
                     break
+
     hid_handle = os.open(hid_device_path, os.O_RDWR, os.O_NONBLOCK)
     return hid_handle
 
