@@ -50,6 +50,6 @@ def test_auto_exposure_mode_setting(fixture_camera):
         else:
             camera._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, CVAutoExposure.AUTO)
             camera.set_auto_exposure_mode(ae_mode)
-            aquired_auto_exposure_mode, ae_window_size = camera.auto_exposure_setting
+            aquired_auto_exposure_mode, aquired_ae_window_size = camera.auto_exposure_setting
             assert inner_expected_mode == [mode.name for mode in AutoExposureMode if aquired_auto_exposure_mode == mode.value][0]
-            assert ae_window_size == ae_window_size
+            assert ae_window_size == aquired_ae_window_size
