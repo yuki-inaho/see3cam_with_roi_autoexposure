@@ -1,10 +1,11 @@
 import os
 import re
-import pyudev
 import errno
-import sys
 from select import select
 from time import sleep
+
+# WARNING: LGPL
+import pyudev
 
 # If you would like to know the detail of See3CAM CU20's RoI based Autoexposure function, see below code lines
 # https://github.com/econsysqtcam/qtcam/blob/master/src/see3cam_cu20.cpp#L436-L489
