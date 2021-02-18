@@ -104,8 +104,11 @@ class Camera:
     def __init__(self, camera_config: CameraConfig):
         self._cap = get_cv2_video(camera_config)
         self._map1, self._map2 = fisheye_undistort_rectify_map(camera_config)
-        self._set_auto_exposure_mode(camera_config)
+        self._image_width = camera_config.width
+        self._image_height = camera_config.height
         self._frame = Frame()
+
+        self._initialize_auto_exposure_mode(camera_config)
 
     def __str__(self):
         aquired_auto_exposure_mode, ae_window_size = self.auto_exposure_setting
@@ -120,24 +123,25 @@ class Camera:
                 f"  Auto Exposure Mode: {aquired_auto_exposure_str} \n"\
                 f"  Window Size: {ae_window_size}"
 
-    def _set_auto_exposure_mode(self, camera_config: CameraConfig):
-        hid_handle = get_hid_handle_from_device_id(camera_config.device_id)
-
-        if (camera_config.auto_exposure is None) or (camera_config.auto_exposure == "centered"):
-            self._ae_status = enable_centered_auto_exposure(camera_config.width, camera_config.height, hid_handle)
-        elif camera_config.auto_exposure == "roi":
-            self._ae_status = enable_downward_center_roi_auto_exposure(
-                camera_config.width, camera_config.height, hid_handle
-            )
-        elif camera_config.auto_exposure == "disabled":
-            self._ae_status = disable_auto_exposure(camera_config.width, camera_config.height, hid_handle)
+    def _initialize_auto_exposure_mode(self, camera_config: CameraConfig):
+        self._hid_handle = get_hid_handle_from_device_id(camera_config.device_id)
+        if camera_config.auto_exposure is None:
+            self.set_auto_exposure_mode("centered")
         else:
-            print(f"\nNo such auto-exposure mode {camera_config.auto_exposure}. Choose [centered, roi, disabled]")
-            self._ae_status = False
-        assert self._ae_status
-
+            self.set_auto_exposure_mode(camera_config.auto_exposure)
         self._auto_exposure_mode = camera_config.auto_exposure
-        self._hid_handle = hid_handle
+
+    def set_auto_exposure_mode(self, requested_auto_exposure_mode: str):
+        if not requested_auto_exposure_mode in ["centered", "roi", "disabled"]:
+            raise ValueError(f"\nNo such auto-exposure mode {requested_auto_exposure_mode}. Choose [centered, roi, disabled]")
+
+        if requested_auto_exposure_mode == "centered":
+            self._ae_status = enable_centered_auto_exposure(self.image_width, self.image_height, self._hid_handle)
+        elif requested_auto_exposure_mode == "roi":
+            self._ae_status = enable_downward_center_roi_auto_exposure(self.image_width, self.image_height, self._hid_handle)
+        elif requested_auto_exposure_mode == "disabled":
+            self._ae_status = disable_auto_exposure(self.image_width, self.image_height, self._hid_handle)
+        assert self._ae_status
 
     def update(self) -> bool:
         ret, frame = self._cap.read()
@@ -151,6 +155,14 @@ class Camera:
     @property
     def image(self):
         return self._frame.data
+
+    @property
+    def image_width(self):
+        return self._image_width
+
+    @property
+    def image_height(self):
+        return self._image_height
 
     @property
     def remap_image(self):
