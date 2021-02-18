@@ -20,7 +20,6 @@ class CVAutoExposure(IntEnum):
     MANUAL = 1
 
 
-
 @pytest.fixture
 def fixture_camera(scope="session"):
     camera = Camera(get_config(CONFIG_FILE_PATH))
@@ -34,7 +33,7 @@ def test_camera_is_activated(fixture_camera):
 
 def test_auto_exposure_mode_setting(fixture_camera):
     camera = fixture_camera
-    for ae_mode, inner_expected_mode in zip(["centered", "roi", "disabled"], ["Centered", "Manual", "Disable"]):
+    for ae_mode, inner_expected_mode, ae_window_size in zip(["centered", "roi", "disabled"], ["Centered", "Manual", "Disable"], [8, 4, 0]):
         if ae_mode == "disabled":
             # When if without below process (call only camera.set_auto_exposure_mode("disabled")),
             # "aquired_auto_exposure_mode" will set "Manual"
@@ -43,7 +42,7 @@ def test_auto_exposure_mode_setting(fixture_camera):
                 camera.set_auto_exposure_mode(_mode)
                 aquired_auto_exposure_mode, _ = camera.auto_exposure_setting
                 assert inner_expected_mode == [mode.name for mode in AutoExposureMode if aquired_auto_exposure_mode == mode.value][0]
-            
+
             camera._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, CVAutoExposure.AUTO)
             camera.set_auto_exposure_mode("disabled")
             aquired_auto_exposure_mode, _ = camera.auto_exposure_setting
@@ -51,5 +50,6 @@ def test_auto_exposure_mode_setting(fixture_camera):
         else:
             camera._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, CVAutoExposure.AUTO)
             camera.set_auto_exposure_mode(ae_mode)
-            aquired_auto_exposure_mode, _ = camera.auto_exposure_setting
+            aquired_auto_exposure_mode, ae_window_size = camera.auto_exposure_setting
             assert inner_expected_mode == [mode.name for mode in AutoExposureMode if aquired_auto_exposure_mode == mode.value][0]
+            assert ae_window_size == ae_window_size
