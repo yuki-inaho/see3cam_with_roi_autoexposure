@@ -52,5 +52,4 @@ def test_auto_exposure_mode_setting(fixture_camera):
             camera._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, CVAutoExposure.AUTO)
             camera.set_auto_exposure_mode(ae_mode)
             aquired_auto_exposure_mode, _ = camera.auto_exposure_setting
-            time.sleep(0.1)
             assert inner_expected_mode == [mode.name for mode in AutoExposureMode if aquired_auto_exposure_mode == mode.value][0]
