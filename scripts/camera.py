@@ -11,13 +11,14 @@ from scripts.see3cam_api import (
     enable_downward_center_roi_auto_exposure,
     disable_auto_exposure,
     get_hid_handle_from_device_id,
+    get_auto_exposure_property,
 )
 
 
-class AutoExposure(Enum):
-    Centered: 0
-    RoI: 1
-    Disable: 2
+class AutoExposureMode(Enum):
+    Centered = 0x01
+    Manual = 0x02
+    Disable = 0x03
 
 
 class FromDict:
@@ -106,6 +107,19 @@ class Camera:
         self._set_auto_exposure_mode(camera_config)
         self._frame = Frame()
 
+    def __str__(self):
+        aquired_auto_exposure_mode, ae_window_size = self.auto_exposure_setting
+        aquired_auto_exposure_str = [mode.name for mode in AutoExposureMode if aquired_auto_exposure_mode == mode.value]
+        assert len(aquired_auto_exposure_str) > 0
+
+        aquired_auto_exposure_str = aquired_auto_exposure_str[0]
+
+        return  f"<< Auto Exposure Setting Information >>\n"\
+                f"Auto Exposure Mode (Expected): {self.auto_exposure_mode}\n"\
+                f"Auto Exposure Setting (Actual): \n"\
+                f"  Auto Exposure Mode: {aquired_auto_exposure_str} \n"\
+                f"  Window Size: {ae_window_size}"
+
     def _set_auto_exposure_mode(self, camera_config: CameraConfig):
         hid_handle = get_hid_handle_from_device_id(camera_config.device_id)
 
@@ -122,7 +136,8 @@ class Camera:
             self._ae_status = False
         assert self._ae_status
 
-        self._auto_exposure_setting = camera_config.auto_exposure
+        self._auto_exposure_mode = camera_config.auto_exposure
+        self._hid_handle = hid_handle
 
     def update(self) -> bool:
         ret, frame = self._cap.read()
@@ -148,8 +163,15 @@ class Camera:
         )
 
     @property
-    def auto_exposure_setting(self) -> str:
-        if self._auto_exposure_setting is None:
+    def auto_exposure_setting(self):
+        status, roi_mode, window_size = get_auto_exposure_property(self._hid_handle)
+        if not status:
+            print("Getting auto exposure setting is failed")
+        return roi_mode, window_size
+
+    @property
+    def auto_exposure_mode(self) -> str:
+        if self._auto_exposure_mode is None:
             return "centered"
         else:
-            return self._auto_exposure_setting
+            return self._auto_exposure_mode

@@ -23,7 +23,7 @@ def scaling_int(int_num, scale):
 
 def main(camera_toml_path, enable_distortion_correction):
     camera = Camera(get_config(camera_toml_path))
-    print(f"Auto Exposure Setting: {camera.auto_exposure_setting}")
+    print(camera)
     scaling = partial(scaling_int, scale=2.0 / 3)
 
     roi = cvui.Rect(0, 0, 0, 0)

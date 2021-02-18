@@ -101,14 +101,14 @@ def enable_centered_auto_exposure(image_width, image_height, hid_handle, win_siz
     output_buffer = hid_read(hid_handle)
 
     if output_buffer[6] == 0x00:
-        print("\nEnabling AutoExposure(centered) is failed")
+        print("\nEnabling AutoExposure(centered) is failed\n")
         return False
     elif (
         output_buffer[0] == CAMERA_CONTROL_CU20
         and output_buffer[1] == SET_AE_ROI_MODE_CU20
         and output_buffer[6] == SUCCESS
     ):
-        print("\nAutoExposure(centered) is enabled")
+        print("\nAutoExposure(centered) is enabled\n")
         return True
 
 
@@ -140,14 +140,14 @@ def enable_downward_center_roi_auto_exposure(image_width, image_height, hid_hand
     output_buffer = hid_read(hid_handle)
 
     if output_buffer[6] == 0x00:
-        print("\nEnabling AutoExposure(RoI based) is failed")
+        print("\nEnabling AutoExposure(RoI based) is failed\n")
         return False
     elif (
         output_buffer[0] == CAMERA_CONTROL_CU20
         and output_buffer[1] == SET_AE_ROI_MODE_CU20
         and output_buffer[6] == SUCCESS
     ):
-        print("\nAutoExposure(RoI based) is enabled")
+        print("\nAutoExposure(RoI based) is enabled\n")
         return True
 
 
@@ -161,12 +161,34 @@ def disable_auto_exposure(image_width, image_height, hid_handle, win_size=8):
     output_buffer = hid_read(hid_handle)
 
     if output_buffer[6] == 0x00:
-        print("\nDisabling AutoExposure(centered) failed")
+        print("\nDisabling AutoExposure(centered) failed\n")
         return False
     elif (
         output_buffer[0] == CAMERA_CONTROL_CU20
         and output_buffer[1] == SET_AE_ROI_MODE_CU20
         and output_buffer[6] == SUCCESS
     ):
-        print("\nAutoExposure(centered) is disabled")
+        print("\nAutoExposure(centered) is disabled\n")
         return True
+
+
+def get_auto_exposure_property(hid_handle):
+    """ Get auto exposure setting property"""
+    input_buffer = bytearray([0] * BUFFER_LENGTH)
+    input_buffer[1] = CAMERA_CONTROL_CU20
+    input_buffer[2] = GET_AE_ROI_MODE_CU20
+
+    hid_write(hid_handle, input_buffer)
+    output_buffer = hid_read(hid_handle)
+
+    if output_buffer[6] == 0x00:
+        print("\nGetting AutoExposure Setting is failed\n")
+        return False, None, None
+    elif (
+        output_buffer[0] == CAMERA_CONTROL_CU20
+        and output_buffer[1] == GET_AE_ROI_MODE_CU20
+        and output_buffer[6] == SUCCESS
+    ):
+        roi_mode = output_buffer[2]
+        window_size = output_buffer[5]
+        return True, roi_mode, window_size
