@@ -12,7 +12,8 @@ from functools import partial
 def parse_args():
     parser = argparse.ArgumentParser(description="")
     default_comm_path = str(Path(Path(__file__).parent, "cfg/camera_parameter.toml"))
-    parser.add_argument("--camera-toml-path", type=str, default=default_comm_path)
+    parser.add_argument("--camera-toml-path", "-c", type=str, default=default_comm_path)
+    parser.add_argument('--enable-distortion-correction', "-d", action='store_true')
     return parser.parse_args()
 
 
@@ -20,16 +21,12 @@ def scaling_int(int_num, scale):
     return int(int_num * scale)
 
 
-def main(camera_toml_path):
+def main(camera_toml_path, enable_distortion_correction):
     camera = Camera(get_config(camera_toml_path))
     print(f"Auto Exposure Setting: {camera.auto_exposure_setting}")
     scaling = partial(scaling_int, scale=2.0 / 3)
 
-    anchor = cvui.Point()
     roi = cvui.Rect(0, 0, 0, 0)
-    prev_roi = cvui.Rect(0, 0, 0, 0)
-    working = False
-
     WINDOW_NAME = "Capture"
     cvui.init(WINDOW_NAME)
     while True:
@@ -39,8 +36,8 @@ def main(camera_toml_path):
 
         status = camera.update()
         if status:
-            # see3cam_rgb_image = camera.remap_image
-            see3cam_rgb_image = camera.image
+            # WARNING:If distortion correction is enabled, the rectangle on windows doesn't indicate actual RoI area for auto exposure.
+            see3cam_rgb_image = camera.remap_image if enable_distortion_correction else camera.image
             scaled_width = scaling(1920)
             scaled_height = scaling(1080)
             see3cam_rgb_image_resized = cv2.resize(see3cam_rgb_image, (scaled_width, scaled_height))
@@ -72,4 +69,4 @@ def main(camera_toml_path):
 
 if __name__ == "__main__":
     args = parse_args()
-    main(args.camera_toml_path)
+    main(args.camera_toml_path, args.enable_distortion_correction)
