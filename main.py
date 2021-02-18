@@ -1,6 +1,5 @@
 import cvui
 import argparse
-import toml
 import cv2
 import numpy as np
 
@@ -23,6 +22,7 @@ def scaling_int(int_num, scale):
 
 def main(camera_toml_path):
     camera = Camera(get_config(camera_toml_path))
+    print(f"Auto Exposure Setting: {camera.auto_exposure_setting}")
     scaling = partial(scaling_int, scale=2.0 / 3)
 
     anchor = cvui.Point()
@@ -53,8 +53,12 @@ def main(camera_toml_path):
             # Ensure ROI is within bounds
             roi.x = 0 if roi.x < 0 else roi.x
             roi.y = 0 if roi.y < 0 else roi.y
-            roi.width = roi.width + scaled_width - (roi.x + roi.width) if roi.x + roi.width > scaled_width else roi.width
-            roi.height = roi.height + scaled_height - (roi.y + roi.height) if roi.y + roi.height > scaled_height else roi.height
+            roi.width = (
+                roi.width + scaled_width - (roi.x + roi.width) if roi.x + roi.width > scaled_width else roi.width
+            )
+            roi.height = (
+                roi.height + scaled_height - (roi.y + roi.height) if roi.y + roi.height > scaled_height else roi.height
+            )
 
             cvui.rect(frame, roi.x, roi.y, roi.width, roi.height, 0xFF0000)
 

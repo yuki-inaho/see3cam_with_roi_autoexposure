@@ -1,16 +1,16 @@
 from datetime import datetime
 from threading import RLock
 from typing import Optional
-from enum import Enum
 
 import cv2
 import numpy as np
+from enum import Enum
 from attr import dataclass, fields
 from scripts.see3cam_api import (
     enable_centered_auto_exposure,
     enable_downward_center_roi_auto_exposure,
     disable_auto_exposure,
-    get_hid_handle_from_device_id
+    get_hid_handle_from_device_id,
 )
 
 
@@ -58,7 +58,9 @@ def fisheye_undistort_rectify_map(cfg: CameraConfig):
     dist_coef = np.array([[cfg.k1, cfg.k2, cfg.k3, cfg.k4]])
     projection_camera_mat = cv2.getOptimalNewCameraMatrix(camera_mat, dist_coef, (cfg.width, cfg.height), 0)[0]
     DIM = (cfg.width, cfg.height)
-    return cv2.fisheye.initUndistortRectifyMap(camera_mat, dist_coef, np.eye(3), projection_camera_mat, DIM, cv2.CV_16SC2)
+    return cv2.fisheye.initUndistortRectifyMap(
+        camera_mat, dist_coef, np.eye(3), projection_camera_mat, DIM, cv2.CV_16SC2
+    )
 
 
 def get_cv2_video(cfg: CameraConfig) -> cv2.VideoCapture:
@@ -101,15 +103,18 @@ class Camera:
     def __init__(self, camera_config: CameraConfig):
         self._cap = get_cv2_video(camera_config)
         self._map1, self._map2 = fisheye_undistort_rectify_map(camera_config)
+        self._set_auto_exposure_mode(camera_config)
         self._frame = Frame()
-        hid_handle = get_hid_handle_from_device_id(camera_config.device_id)
-        self._set_auto_exposure_mode(camera_config, hid_handle)
 
-    def _set_auto_exposure_mode(self, camera_config: CameraConfig, hid_handle: int):
+    def _set_auto_exposure_mode(self, camera_config: CameraConfig):
+        hid_handle = get_hid_handle_from_device_id(camera_config.device_id)
+
         if (camera_config.auto_exposure is None) or (camera_config.auto_exposure == "centered"):
             self._ae_status = enable_centered_auto_exposure(camera_config.width, camera_config.height, hid_handle)
         elif camera_config.auto_exposure == "roi":
-            self._ae_status = enable_downward_center_roi_auto_exposure(camera_config.width, camera_config.height, hid_handle)
+            self._ae_status = enable_downward_center_roi_auto_exposure(
+                camera_config.width, camera_config.height, hid_handle
+            )
         elif camera_config.auto_exposure == "disabled":
             self._ae_status = disable_auto_exposure(camera_config.width, camera_config.height, hid_handle)
         else:
@@ -117,6 +122,7 @@ class Camera:
             self._ae_status = False
         assert self._ae_status
 
+        self._auto_exposure_setting = camera_config.auto_exposure
 
     def update(self) -> bool:
         ret, frame = self._cap.read()
@@ -140,3 +146,10 @@ class Camera:
             interpolation=cv2.INTER_LINEAR,
             borderMode=cv2.BORDER_CONSTANT,
         )
+
+    @property
+    def auto_exposure_setting(self) -> str:
+        if self._auto_exposure_setting is None:
+            return "centered"
+        else:
+            return self._auto_exposure_setting
