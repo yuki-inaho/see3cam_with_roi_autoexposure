@@ -19,7 +19,8 @@ _SCHEMA = {
     "k4": {"type": "float", "required": True},
     "k5": {"type": "float", "required": False},
     "k6": {"type": "float", "required": False},
-    "auto_exposure": {"type": "string", "required": False}
+    "auto_exposure": {"type": "string", "required": False},
+    "roi_size": {"type": "integer", "required": False}
 }
 
 

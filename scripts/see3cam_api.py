@@ -112,7 +112,7 @@ def enable_centered_auto_exposure(image_width, image_height, hid_handle, win_siz
         return True
 
 
-def enable_downward_center_roi_auto_exposure(image_width, image_height, hid_handle, win_size=4):
+def enable_lower_center_roi_auto_exposure(image_width, image_height, hid_handle, win_size=4):
     """ Set ROI auto exposure to camera """
     outputLow = 0
     outputHigh = 255
@@ -126,6 +126,45 @@ def enable_downward_center_roi_auto_exposure(image_width, image_height, hid_hand
     inputYLow = 0
     inputYHigh = image_height - 1
     inputYCord = int(image_height * 3 / 4)
+    outputYCord = int(((inputYCord - inputYLow) / (inputYHigh - inputYLow)) * (outputHigh - outputLow) + outputLow)
+
+    input_buffer = bytearray([0] * BUFFER_LENGTH)
+    input_buffer[1] = CAMERA_CONTROL_CU20
+    input_buffer[2] = SET_AE_ROI_MODE_CU20
+    input_buffer[3] = AutoExpManual
+    input_buffer[4] = outputXCord
+    input_buffer[5] = outputYCord
+    input_buffer[6] = win_size
+
+    hid_write(hid_handle, input_buffer)
+    output_buffer = hid_read(hid_handle)
+
+    if output_buffer[6] == 0x00:
+        print("\nEnabling AutoExposure(RoI based) is failed\n")
+        return False
+    elif (
+        output_buffer[0] == CAMERA_CONTROL_CU20
+        and output_buffer[1] == SET_AE_ROI_MODE_CU20
+        and output_buffer[6] == SUCCESS
+    ):
+        print("\nAutoExposure(RoI based) is enabled\n")
+        return True
+
+
+def enable_roi_auto_exposure(xcord, ycord, image_width, image_height, hid_handle, win_size=4):
+    """ Set ROI auto exposure to camera """
+    outputLow = 0
+    outputHigh = 255
+
+    # Convert RoI center position to 0-255 value
+    inputXLow = 0
+    inputXHigh = image_width - 1
+    inputXCord = xcord
+    outputXCord = int(((inputXCord - inputXLow) / (inputXHigh - inputXLow)) * (outputHigh - outputLow) + outputLow)
+
+    inputYLow = 0
+    inputYHigh = image_height - 1
+    inputYCord = ycord
     outputYCord = int(((inputYCord - inputYLow) / (inputYHigh - inputYLow)) * (outputHigh - outputLow) + outputLow)
 
     input_buffer = bytearray([0] * BUFFER_LENGTH)

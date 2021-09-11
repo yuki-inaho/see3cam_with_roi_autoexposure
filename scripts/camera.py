@@ -8,7 +8,8 @@ from enum import Enum
 from attr import dataclass, fields
 from scripts.see3cam_api import (
     enable_centered_auto_exposure,
-    enable_downward_center_roi_auto_exposure,
+    enable_lower_center_roi_auto_exposure,
+    enable_roi_auto_exposure,
     disable_auto_exposure,
     get_hid_handle_from_device_id,
     get_auto_exposure_property,
@@ -46,6 +47,7 @@ class CameraConfig(FromDict):
     k3: float
     k4: float
     auto_exposure: Optional[str]
+    roi_size: Optional[int]
 
 
 def confirm_prop(cap, prop_id, value_arg):
@@ -59,9 +61,7 @@ def fisheye_undistort_rectify_map(cfg: CameraConfig):
     dist_coef = np.array([[cfg.k1, cfg.k2, cfg.k3, cfg.k4]])
     projection_camera_mat = cv2.getOptimalNewCameraMatrix(camera_mat, dist_coef, (cfg.width, cfg.height), 0)[0]
     DIM = (cfg.width, cfg.height)
-    return cv2.fisheye.initUndistortRectifyMap(
-        camera_mat, dist_coef, np.eye(3), projection_camera_mat, DIM, cv2.CV_16SC2
-    )
+    return cv2.fisheye.initUndistortRectifyMap(camera_mat, dist_coef, np.eye(3), projection_camera_mat, DIM, cv2.CV_16SC2)
 
 
 def get_cv2_video(cfg: CameraConfig) -> cv2.VideoCapture:
@@ -106,6 +106,7 @@ class Camera:
         self._map1, self._map2 = fisheye_undistort_rectify_map(camera_config)
         self._image_width = camera_config.width
         self._image_height = camera_config.height
+        self._roi_size = camera_config.roi_size if camera_config.roi_size is not None else 4
         self._frame = Frame()
 
         self._initialize_auto_exposure_mode(camera_config)
@@ -117,11 +118,13 @@ class Camera:
 
         aquired_auto_exposure_str = aquired_auto_exposure_str[0]
 
-        return  f"<< Auto Exposure Setting Information >>\n"\
-                f"Auto Exposure Mode (Expected): {self.auto_exposure_mode}\n"\
-                f"Auto Exposure Setting (Actual): \n"\
-                f"  Auto Exposure Mode: {aquired_auto_exposure_str} \n"\
-                f"  Window Size: {ae_window_size}"
+        return (
+            f"<< Auto Exposure Setting Information >>\n"
+            f"Auto Exposure Mode (Expected): {self.auto_exposure_mode}\n"
+            f"Auto Exposure Setting (Actual): \n"
+            f"  Auto Exposure Mode: {aquired_auto_exposure_str} \n"
+            f"  Window Size: {ae_window_size}"
+        )
 
     def _initialize_auto_exposure_mode(self, camera_config: CameraConfig):
         self._hid_handle = get_hid_handle_from_device_id(camera_config.device_id)
@@ -132,13 +135,17 @@ class Camera:
         self._auto_exposure_mode = camera_config.auto_exposure
 
     def set_auto_exposure_mode(self, requested_auto_exposure_mode: str):
-        if not requested_auto_exposure_mode in ["centered", "roi", "disabled"]:
-            raise ValueError(f"\nNo such auto-exposure mode {requested_auto_exposure_mode}. Choose [centered, roi, disabled]")
+        if not requested_auto_exposure_mode in ["centered", "roi", "lower_center", "disabled"]:
+            raise ValueError(f"\nNo such auto-exposure mode {requested_auto_exposure_mode}. Choose [centered, roi, disabled, lower_center]")
 
         if requested_auto_exposure_mode == "centered":
             self._ae_status = enable_centered_auto_exposure(self.image_width, self.image_height, self._hid_handle)
         elif requested_auto_exposure_mode == "roi":
-            self._ae_status = enable_downward_center_roi_auto_exposure(self.image_width, self.image_height, self._hid_handle)
+            self._ae_status = enable_roi_auto_exposure(
+                self.image_width // 2, self.image_height // 2, self.image_width, self.image_height, self._hid_handle
+            )
+        elif requested_auto_exposure_mode == "lower_center":
+            self._ae_status = enable_lower_center_roi_auto_exposure(self.image_width, self.image_height, self._hid_handle)
         elif requested_auto_exposure_mode == "disabled":
             self._ae_status = disable_auto_exposure(self.image_width, self.image_height, self._hid_handle)
         assert self._ae_status
@@ -147,6 +154,9 @@ class Camera:
         ret, frame = self._cap.read()
         self._frame.data = frame
         return ret
+
+    def set_roi_properties(self, xcord, ycord, win_size=4):
+        self._ae_status = enable_roi_auto_exposure(xcord, ycord, self.image_width, self.image_height, self._hid_handle, win_size=win_size)
 
     @property
     def image_timestamp(self):
